@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "raylib.h"
+#include "raylib-6.0_linux_amd64/include/raylib.h"
 
 #define COLOR1     CLITERAL(Color){ 238, 238, 238, 255 }
 #define COLOR2     CLITERAL(Color){ 221, 221, 221, 255 }
