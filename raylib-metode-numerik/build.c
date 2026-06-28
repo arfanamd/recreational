@@ -22,7 +22,8 @@ void compileprog(void) {
 		temp_sprintf("-I%s/include/", ray_home),
 		temp_sprintf("-L%s/lib/", ray_home),
 		temp_sprintf("-Wl,-rpath,%s/lib/", ray_home),
-		"-lraylib"
+		"-lraylib",
+		"-lm"
 	);
 }
 

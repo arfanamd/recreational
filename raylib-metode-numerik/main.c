@@ -67,20 +67,49 @@ int main(void) {
 	};
 	
 	const Font font = LoadFont("assets/fonts/LoveYaLikeASister-Regular.ttf");
-	const Vector2 textPos = {
+	const Vector2 tboxAboutPos = {
 		.x = 80,
 		.y = iconBannerPos.y + iconBanner.height + 10,
 	};
-	const char *textStr = "Nama: Ahmad Arfan Maulana\nNPM: 202443500619\nMetode Numerik";
+	const char *tboxMessage = "Nama: Ahmad Arfan Maulana\nNPM: 202443500619\nMetode Numerik";
 	const Vector2 menuPos = {
 		.x = 30,
 		.y = winAboutRec.height + 20,
 	};
+	
+	const Vector2 tboxMainMenu = {
+		.x = winMenuRec.x + (winMenuRec.width * 10 / 100),
+		.y = winMenuRec.y + 15,
+	};
+	const Vector2 tboxMenuGauss = {
+		.x = winMenuRec.x + (winMenuRec.width * 10 / 100),
+		.y = tboxMainMenu.y + 35,
+	};
+	const Rectangle rboxMenuGauss = {
+		.x = tboxMenuGauss.x,
+		.y = tboxMenuGauss.y,
+		.width = winMenuRec.width - tboxMenuGauss.x,
+		.height = 20,
+	};
+	
+	const Vector2 tboxMenuSecant = {
+		.x = winMenuRec.x + (winMenuRec.width * 10 / 100),
+		.y = tboxMenuGauss.y + 35,
+	};
+	const Rectangle rboxMenuSecant = {
+		.x = tboxMenuSecant.x,
+		.y = tboxMenuSecant.y,
+		.width = winMenuRec.width - tboxMenuSecant.x,
+		.height = 20,
+	};
 	const char *menuStr =
 		"Menu\n\nMetode Eliminasi Gauss Jordan\n\nMetode Secant\n\nMetode Lagrange\n\nMetode Euler";
 	
+	Vector2 mouseP = {0};
+	
 	while (!WindowShouldClose()) {
 		BeginDrawing();
+		mouseP = GetMousePosition();
 		{
 			ClearBackground(COLOR7);
 			RectwStroke(winAboutRec, BLUE);
@@ -89,8 +118,28 @@ int main(void) {
 			RectwStroke(winEquationRec, WINTER);
 			
 			DrawTextureV(iconBannerTex, iconBannerPos, COLOR1);
-			DrawTextEx(font, textStr, textPos, 16.0f, 1.0f, WINTER);
-			DrawTextEx(font, menuStr, menuPos, 20.0f, 2.0f, NAVY);
+			DrawTextEx(font, tboxMessage, tboxAboutPos, 16.0f, 1.0f, WINTER);
+			
+			/* DrawTextEx(font, menuStr, menuPos, 20.0f, 2.0f, NAVY); */
+			DrawTextEx(font, "Main Menu", tboxMainMenu, 20.0f, 2.0f, NAVY);
+			
+			DrawTextEx(font, "Metode Eliminasi Gauss Jordan", tboxMenuGauss, 20.0f, 2.0f, NAVY);
+			if (CheckCollisionPointRec(mouseP, rboxMenuGauss)) {
+				DrawTextEx(font, "Metode Eliminasi Gauss Jordan", tboxMenuGauss, 20.0f, 2.0f, BLACK);
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+					/* DrawTextEx(font, "Metode Eliminasi Gauss Jordan", tboxMenuGauss, 20.0f, 2.0f, NAVY); */
+					fprintf(stderr, "[DEBUG]: Gauss Jordan\n");
+				}
+			}
+			
+			DrawTextEx(font, "Metode Secant", tboxMenuSecant, 20.0f, 2.0f, NAVY);
+			if (CheckCollisionPointRec(mouseP, rboxMenuSecant)) {
+				DrawTextEx(font, "Metode Secant", tboxMenuSecant, 20.0f, 2.0f, BLACK);
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+					fprintf(stderr, "[DEBUG]: Gauss Secant\n");
+					/* DrawTextEx(font, "Metode Secant", tboxMenuSecant, 20.0f, 2.0f, NAVY); */
+				}
+			}
 		}
 		EndDrawing();
 		if (IsKeyPressed(KEY_Q)) goto quit;
