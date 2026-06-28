@@ -4,12 +4,23 @@
 #define COLOR1     CLITERAL(Color){ 238, 238, 238, 255 }
 #define COLOR2     CLITERAL(Color){ 128, 128, 128, 255 }
 #define COLOR3     CLITERAL(Color){ 221, 221, 221, 255 }
+#define COLOR4     CLITERAL(Color){ 175, 221, 233, 255 }
 #define COLOR5     CLITERAL(Color){ 203,  41,  87, 255 }
 #define COLOR7     CLITERAL(Color){   0,   0,   0, 255 }
 
+#define BLACK   CLITERAL(Color){ 027,  38, 044, 255 }
+#define NAVY    CLITERAL(Color){ 015, 076, 117, 255 }
+#define BLUE    CLITERAL(Color){ 050, 130, 184, 255 }
+#define WINTER  CLITERAL(Color){ 187, 225, 250, 255 }
+
 void RectwStroke(Rectangle rec, Color color) {
 	DrawRectangleRec(rec, color);
-	DrawRectangleLinesEx(rec, 1, COLOR2);
+	DrawRectangleLinesEx(rec, 1.0f, NAVY);
+}
+
+void RectwStrokeGrad(Rectangle rec, Color color1, Color color2) {
+	DrawRectangleGradientEx(rec, color1, color2, color2, color1);
+	DrawRectangleLinesEx(rec, 2, NAVY);
 }
 
 int main(void) {
@@ -44,7 +55,7 @@ int main(void) {
 	InitWindow(
 		screenWidth,
 		screenHeight,
-		"Basic Window"
+		"Metode Numerik"
 	);
 	SetTargetFPS(30);
 	
@@ -61,43 +72,25 @@ int main(void) {
 		.y = iconBannerPos.y + iconBanner.height + 10,
 	};
 	const char *textStr = "Nama: Ahmad Arfan Maulana\nNPM: 202443500619\nMetode Numerik";
-	
-	fprintf(stderr, "[DEBUG]:screenWidth: %d\n[DEBUG]:screenHeight: %d\n",
-		GetMonitorWidth(GetCurrentMonitor()), GetMonitorHeight(GetCurrentMonitor()));
+	const Vector2 menuPos = {
+		.x = 30,
+		.y = winAboutRec.height + 20,
+	};
+	const char *menuStr =
+		"Menu\n\nMetode Eliminasi Gauss Jordan\n\nMetode Secant\n\nMetode Lagrange\n\nMetode Euler";
 	
 	while (!WindowShouldClose()) {
 		BeginDrawing();
 		{
 			ClearBackground(COLOR7);
-			RectwStroke(winAboutRec, COLOR1);
-			RectwStroke(winMenuRec, COLOR1);
-			RectwStroke(winTitleRec, COLOR1);
-			RectwStroke(winEquationRec, COLOR1);
+			RectwStroke(winAboutRec, BLUE);
+			RectwStroke(winMenuRec, WINTER);
+			RectwStroke(winTitleRec, BLUE);
+			RectwStroke(winEquationRec, WINTER);
 			
 			DrawTextureV(iconBannerTex, iconBannerPos, COLOR1);
-			
-			DrawTextEx(font, textStr, textPos, 16.0f, 1.0f, COLOR7);
-			/* DrawRectangleLines( */
-			/* 	0, */
-			/* 	0, */
-			/* 	screenWidth*30/100, */
-			/* 	screenHeight, */
-			/* 	COLOR2 */
-			/* ); */
-			/* DrawRectangleLines( */
-			/* 	0, */
-			/* 	screenHeight*30/100, */
-			/* 	screenWidth*30/100, */
-			/* 	screenHeight-(screenHeight*30/100), */
-			/* 	COLOR3 */
-			/* ); */
-			/* DrawText( */
-			/* 	"This is window GUI", */
-			/* 	screenWidth*50/100, */
-			/* 	screenHeight*50/100, */
-			/* 	20, */
-			/* 	COLOR1 */
-			/* ); */
+			DrawTextEx(font, textStr, textPos, 16.0f, 1.0f, WINTER);
+			DrawTextEx(font, menuStr, menuPos, 20.0f, 2.0f, NAVY);
 		}
 		EndDrawing();
 		if (IsKeyPressed(KEY_Q)) goto quit;
