@@ -1,146 +1,236 @@
 #include <stdio.h>
-#include "raylib-6.0_linux_amd64/include/raylib.h"
+#include "raylib.h"
 
-#define COLOR1     CLITERAL(Color){ 238, 238, 238, 255 }
-#define COLOR2     CLITERAL(Color){ 128, 128, 128, 255 }
-#define COLOR3     CLITERAL(Color){ 221, 221, 221, 255 }
-#define COLOR4     CLITERAL(Color){ 175, 221, 233, 255 }
-#define COLOR5     CLITERAL(Color){ 203,  41,  87, 255 }
-#define COLOR7     CLITERAL(Color){   0,   0,   0, 255 }
-
+#define COLOR1  CLITERAL(Color){ 238, 238, 238, 255 }
+#define COLOR7  CLITERAL(Color){   0,   0,   0, 255 }
 #define BLACK   CLITERAL(Color){ 027,  38, 044, 255 }
 #define NAVY    CLITERAL(Color){ 015, 076, 117, 255 }
 #define BLUE    CLITERAL(Color){ 050, 130, 184, 255 }
 #define WINTER  CLITERAL(Color){ 187, 225, 250, 255 }
+#define BG CLITERAL(Color){ 39, 55, 77, 255 }
+#define BT CLITERAL(Color){ 82, 109, 130, 77 }
+#define ST CLITERAL(Color){ 221, 230, 237, 77 }
+#define FG CLITERAL(Color){ 221, 230, 237, 255 }
 
-void RectwStroke(Rectangle rec, Color color) {
-	DrawRectangleRec(rec, color);
-	DrawRectangleLinesEx(rec, 1.0f, NAVY);
+#define FONT_SIZE 16
+#define MAX_INPUT 16
+
+const size_t screenWidth  = 1080;
+const size_t screenHeight = 720;
+
+const Rectangle winAboutRect = {
+	.x = 1,
+	.y = 1,
+	.width = screenWidth * 30 / 100,
+	.height = screenHeight * 30 / 100,
+};
+const Rectangle winMenuRect = {
+	.x = 1,
+	.y = winAboutRect.height,
+	.width = screenWidth * 30 / 100,
+	.height = screenHeight - winAboutRect.height,
+};
+const Rectangle winEquationRect = {
+	.x = winAboutRect.width,
+	.y = 1,
+	.width = screenWidth - (screenWidth * 30 / 100),
+	.height = screenHeight,
+};
+
+void RectwStroke(const Rectangle rec, Color fcolor, Color scolor) {
+	DrawRectangleRec(rec, fcolor);
+	DrawRectangleLinesEx(rec, 1.0f, scolor);
 }
 
-void RectwStrokeGrad(Rectangle rec, Color color1, Color color2) {
-	DrawRectangleGradientEx(rec, color1, color2, color2, color1);
-	DrawRectangleLinesEx(rec, 2, NAVY);
+void RoundedRectwStroke(const Rectangle rec, Color fcolor, Color scolor) {
+	const float roundess = 0.5f;
+	DrawRectangleRounded(rec, roundess, 0, fcolor);
+	DrawRectangleRoundedLinesEx(rec, roundess, 0, 0.01f, scolor);
 }
+
+typedef enum {
+	GAUSS,
+	SECANT,
+	LAGRANGE,
+	EULER,
+	NOOP,
+} Mode;
 
 int main(void) {
-	const size_t screenWidth  = 1080;
-	const size_t screenHeight = 720;
-	
-	const Rectangle winAboutRec = {
-		.x = 1,
-		.y = 1,
-		.width = screenWidth * 30 / 100,
-		.height = screenHeight * 30 / 100,
-	};
-	const Rectangle winMenuRec = {
-		.x = 1,
-		.y = winAboutRec.height,
-		.width = screenWidth * 30 / 100,
-		.height = screenHeight - winAboutRec.height,
-	};
-	const Rectangle winTitleRec = {
-		.x = winAboutRec.width,
-		.y = 1,
-		.width = screenWidth - (screenWidth * 30 / 100),
-		.height = screenHeight * 10 /100,
-	};
-	const Rectangle winEquationRec = {
-		.x = winAboutRec.width,
-		.y = winTitleRec.height,
-		.width = screenWidth - (screenWidth * 30 / 100),
-		.height = screenHeight - winTitleRec.height,
-	};
-	
-	InitWindow(
-		screenWidth,
-		screenHeight,
-		"Metode Numerik"
-	);
+	InitWindow(screenWidth, screenHeight, "Metode Numerik");
 	SetTargetFPS(30);
 	
 	const Image iconBanner = LoadImage("assets/iconBanner.png");
 	const Texture2D iconBannerTex = LoadTextureFromImage(iconBanner);
 	const Vector2 iconBannerPos = {
-		.x = 100,
-		.y = winAboutRec.height * 5 / 100,
+		.x = (winAboutRect.width * 50 / 100) - (iconBanner.width * 50 / 100),
+		.y = winAboutRect.height * 5 / 100,
 	};
 	
-	const Font font = LoadFont("assets/fonts/LoveYaLikeASister-Regular.ttf");
+	const Font font = LoadFont("assets/fonts/AzeretMono-Bold.ttf");
+	const char *tboxMessage = "Nama: Ahmad Arfan Maulana\nNPM: 202443500619\nMetode Numerik";
 	const Vector2 tboxAboutPos = {
-		.x = 80,
+		.x = (winAboutRect.width * 50 / 100) - (MeasureText(tboxMessage, FONT_SIZE) * 50 / 100),
 		.y = iconBannerPos.y + iconBanner.height + 10,
 	};
-	const char *tboxMessage = "Nama: Ahmad Arfan Maulana\nNPM: 202443500619\nMetode Numerik";
 	const Vector2 menuPos = {
 		.x = 30,
-		.y = winAboutRec.height + 20,
+		.y = winAboutRect.height + 20,
 	};
 	
 	const Vector2 tboxMainMenu = {
-		.x = winMenuRec.x + (winMenuRec.width * 10 / 100),
-		.y = winMenuRec.y + 15,
+		.x = winMenuRect.x + (winMenuRect.width * 10 / 100),
+		.y = winMenuRect.y + 25,
 	};
+	
 	const Vector2 tboxMenuGauss = {
-		.x = winMenuRec.x + (winMenuRec.width * 10 / 100),
-		.y = tboxMainMenu.y + 35,
+		.x = winMenuRect.x + (winMenuRect.width * 10 / 100),
+		.y = tboxMainMenu.y + 45,
 	};
 	const Rectangle rboxMenuGauss = {
-		.x = tboxMenuGauss.x,
-		.y = tboxMenuGauss.y,
-		.width = winMenuRec.width - tboxMenuGauss.x,
-		.height = 20,
+		.x = tboxMenuGauss.x - 10,
+		.y = tboxMenuGauss.y - 5,
+		.width = MeasureTextEx(font, "Metode Eliminasi Gauss", FONT_SIZE, 0).x + 20,
+		.height = MeasureTextEx(font, "Metode Eliminasi Gauss", FONT_SIZE, 0).y + 10,
 	};
 	
 	const Vector2 tboxMenuSecant = {
-		.x = winMenuRec.x + (winMenuRec.width * 10 / 100),
+		.x = winMenuRect.x + (winMenuRect.width * 10 / 100),
 		.y = tboxMenuGauss.y + 35,
 	};
 	const Rectangle rboxMenuSecant = {
-		.x = tboxMenuSecant.x,
-		.y = tboxMenuSecant.y,
-		.width = winMenuRec.width - tboxMenuSecant.x,
-		.height = 20,
+		.x = tboxMenuSecant.x - 10,
+		.y = tboxMenuSecant.y - 5,
+		.width = MeasureTextEx(font, "Metode Secant", FONT_SIZE, 0).x + 20,
+		.height = MeasureTextEx(font, "Metode Secant", FONT_SIZE, 0).y + 10,
 	};
-	const char *menuStr =
-		"Menu\n\nMetode Eliminasi Gauss Jordan\n\nMetode Secant\n\nMetode Lagrange\n\nMetode Euler";
+	
+	const Vector2 tboxMenuLagrange = {
+		.x = winMenuRect.x + (winMenuRect.width * 10 / 100),
+		.y = tboxMenuSecant.y + 35,
+	};
+	const Rectangle rboxMenuLagrange = {
+		.x = tboxMenuLagrange.x - 10,
+		.y = tboxMenuLagrange.y - 5,
+		.width = MeasureTextEx(font, "Metode Lagrange", FONT_SIZE, 0).x + 20,
+		.height = MeasureTextEx(font, "Metode Lagrange", FONT_SIZE, 0).y + 10,
+	};
+	
+	const Vector2 tboxMenuEuler = {
+		.x = winMenuRect.x + (winMenuRect.width * 10 / 100),
+		.y = tboxMenuLagrange.y + 35,
+	};
+	const Rectangle rboxMenuEuler = {
+		.x = tboxMenuEuler.x - 10,
+		.y = tboxMenuEuler.y - 5,
+		.width = MeasureTextEx(font, "Metode Euler", FONT_SIZE, 0).x + 20,
+		.height = MeasureTextEx(font, "Metode Euler", FONT_SIZE, 0).y + 10,
+	};
+	
+	const Vector2 tboxMenuExit = {
+		.x = winMenuRect.x + (winMenuRect.width * 10 / 100),
+		.y = tboxMenuEuler.y + 35,
+	};
+	const Rectangle rboxMenuExit = {
+		.x = tboxMenuExit.x - 10,
+		.y = tboxMenuExit.y - 5,
+		.width = MeasureTextEx(font, "Exit", FONT_SIZE, 0).x + 20,
+		.height = MeasureTextEx(font, "Exit", FONT_SIZE, 0).y + 10,
+	};
+	
+	const Vector2 tboxGaussInput1 = {
+		.x = winEquationRect.x + 35,
+		.y = winEquationRect.y + 55,
+	};
+	const Rectangle rboxGaussInput1 = {
+		.x = tboxGaussInput1.x - 10,
+		.y = tboxGaussInput1.y - 5,
+		.width = MeasureTextEx(font, "1010101010101010", FONT_SIZE, 0).x + 20,
+		.height = MeasureTextEx(font, "1010101010101010", FONT_SIZE, 0).y + 10,
+	};
 	
 	Vector2 mouseP = {0};
+	char input[MAX_INPUT + 1] = "\0";
+	size_t inputCounter = 0;
+	Mode mode = NOOP;
+	bool input1focus = false;
 	
 	while (!WindowShouldClose()) {
-		BeginDrawing();
 		mouseP = GetMousePosition();
 		{
 			ClearBackground(COLOR7);
-			RectwStroke(winAboutRec, BLUE);
-			RectwStroke(winMenuRec, WINTER);
-			RectwStroke(winTitleRec, BLUE);
-			RectwStroke(winEquationRec, WINTER);
+			RectwStroke(winAboutRect, BG, FG);
+			RectwStroke(winMenuRect, BG, FG);
+			RectwStroke(winEquationRect, BG, FG);
 			
 			DrawTextureV(iconBannerTex, iconBannerPos, COLOR1);
-			DrawTextEx(font, tboxMessage, tboxAboutPos, 16.0f, 1.0f, WINTER);
+			DrawTextEx(font, tboxMessage, tboxAboutPos, FONT_SIZE, 0, FG);
 			
-			/* DrawTextEx(font, menuStr, menuPos, 20.0f, 2.0f, NAVY); */
-			DrawTextEx(font, "Main Menu", tboxMainMenu, 20.0f, 2.0f, NAVY);
+			DrawTextEx(font, "Main Menu", tboxMainMenu, FONT_SIZE, 0, FG);
 			
-			DrawTextEx(font, "Metode Eliminasi Gauss Jordan", tboxMenuGauss, 20.0f, 2.0f, NAVY);
+			DrawTextEx(font, "Metode Eliminasi Gauss", tboxMenuGauss, FONT_SIZE, 0, FG);
 			if (CheckCollisionPointRec(mouseP, rboxMenuGauss)) {
-				DrawTextEx(font, "Metode Eliminasi Gauss Jordan", tboxMenuGauss, 20.0f, 2.0f, BLACK);
+				RoundedRectwStroke(rboxMenuGauss, BT, FG);
+				DrawTextEx(font, "Metode Eliminasi Gauss", tboxMenuGauss, FONT_SIZE, 0, FG);
 				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-					/* DrawTextEx(font, "Metode Eliminasi Gauss Jordan", tboxMenuGauss, 20.0f, 2.0f, NAVY); */
-					fprintf(stderr, "[DEBUG]: Gauss Jordan\n");
+					mode = GAUSS;
 				}
 			}
 			
-			DrawTextEx(font, "Metode Secant", tboxMenuSecant, 20.0f, 2.0f, NAVY);
+			DrawTextEx(font, "Metode Secant", tboxMenuSecant, FONT_SIZE, 0, FG);
 			if (CheckCollisionPointRec(mouseP, rboxMenuSecant)) {
-				DrawTextEx(font, "Metode Secant", tboxMenuSecant, 20.0f, 2.0f, BLACK);
+				RoundedRectwStroke(rboxMenuSecant, BT, FG);
+				DrawTextEx(font, "Metode Secant", tboxMenuSecant, FONT_SIZE, 0, FG);
 				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 					fprintf(stderr, "[DEBUG]: Gauss Secant\n");
-					/* DrawTextEx(font, "Metode Secant", tboxMenuSecant, 20.0f, 2.0f, NAVY); */
+				}
+			}
+			
+			DrawTextEx(font, "Metode Lagrange", tboxMenuLagrange, FONT_SIZE, 0, FG);
+			if (CheckCollisionPointRec(mouseP, rboxMenuLagrange)) {
+				RoundedRectwStroke(rboxMenuLagrange, BT, FG);
+				DrawTextEx(font, "Metode Lagrange", tboxMenuLagrange, FONT_SIZE, 0, FG);
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+					fprintf(stderr, "[DEBUG]: Gauss Lagrange\n");
+				}
+			}
+			
+			DrawTextEx(font, "Metode Euler", tboxMenuEuler, FONT_SIZE, 0, FG);
+			if (CheckCollisionPointRec(mouseP, rboxMenuEuler)) {
+				RoundedRectwStroke(rboxMenuEuler, BT, FG);
+				DrawTextEx(font, "Metode Euler", tboxMenuEuler, FONT_SIZE, 0, FG);
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+					fprintf(stderr, "[DEBUG]: Gauss Euler\n");
+				}
+			}
+			
+			DrawTextEx(font, "Exit", tboxMenuExit, FONT_SIZE, 0, FG);
+			if (CheckCollisionPointRec(mouseP, rboxMenuExit)) {
+				RoundedRectwStroke(rboxMenuExit, BT, FG);
+				DrawTextEx(font, "Exit", tboxMenuExit, FONT_SIZE, 0, FG);
+				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+					goto quit;
 				}
 			}
 		}
+		switch (mode) {
+			case GAUSS:
+				RoundedRectwStroke(rboxGaussInput1, BT, FG);
+				DrawTextEx(font, "Input...", tboxGaussInput1, FONT_SIZE, 0, ST);
+				if (CheckCollisionPointRec(mouseP, rboxGaussInput1)) {
+					if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) input1focus = true;
+				} else {
+					if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) input1focus = false;
+				}
+				if (input1focus) {
+					RoundedRectwStroke(rboxGaussInput1, BT, FG);
+					DrawTextEx(font, "Clicked...", tboxGaussInput1, FONT_SIZE, 0, ST);
+				}
+				break;
+			default:
+				break;
+		}
+		BeginDrawing();
 		EndDrawing();
 		if (IsKeyPressed(KEY_Q)) goto quit;
 	}

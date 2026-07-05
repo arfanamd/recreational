@@ -26,9 +26,34 @@ void compileprog(void) {
 		"-lm"
 	);
 }
+void mingwcompileprog(void) {
+	const char *ofname = "output";
+	const char *ray_home = "raylib-6.0_win64_mingw-w64";
+	cmd_append(
+		&cmd,
+		"cc",
+		"-std=c17",
+		"-Wall",
+		/* "-Wconversion", */
+		/* "-Wshadow", */
+		/* "-Wpedantic", */
+		"main.c",
+		temp_sprintf("-o%s", ofname),
+		temp_sprintf("-I%s/include/", ray_home),
+		temp_sprintf("-L%s/lib/", ray_home),
+		temp_sprintf("-Wl,-rpath,%s/lib/", ray_home),
+		"-lraylib",
+		"-lm",
+		"-lwinmm",
+		"-lgdi32"
+	);
+}
 
 int main(int argc, char **argv) {
 	NOB_GO_REBUILD_URSELF(argc, argv);
+	#ifdef _WIN32
+		mingwcompileprog();
+	#endif // _WIN32
 	compileprog();
 	if (!cmd_run(&cmd)) return 1;
 	return 0;
