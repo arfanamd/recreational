@@ -3,17 +3,13 @@
 
 #define COLOR1  CLITERAL(Color){ 238, 238, 238, 255 }
 #define COLOR7  CLITERAL(Color){   0,   0,   0, 255 }
-#define BLACK   CLITERAL(Color){ 027,  38, 044, 255 }
-#define NAVY    CLITERAL(Color){ 015, 076, 117, 255 }
-#define BLUE    CLITERAL(Color){ 050, 130, 184, 255 }
-#define WINTER  CLITERAL(Color){ 187, 225, 250, 255 }
 #define BG CLITERAL(Color){ 39, 55, 77, 255 }
 #define BT CLITERAL(Color){ 82, 109, 130, 77 }
 #define ST CLITERAL(Color){ 221, 230, 237, 77 }
 #define FG CLITERAL(Color){ 221, 230, 237, 255 }
 
 #define FONT_SIZE 16
-#define MAX_INPUT 16
+#define MAX_BUF 16
 
 const size_t screenWidth  = 1080;
 const size_t screenHeight = 720;
@@ -48,6 +44,14 @@ void RoundedRectwStroke(const Rectangle rec, Color fcolor, Color scolor) {
 	DrawRectangleRoundedLinesEx(rec, roundess, 0, 0.01f, scolor);
 }
 
+bool MenuButton(const char *str, Rectangle rec, Vector2 pos, Font font) {
+	bool hovered = CheckCollisionPointRec(GetMousePosition(), rec);
+	if (hovered)
+		RoundedRectwStroke(rec, BT, FG);
+	DrawTextEx(font, str, pos, FONT_SIZE, 0, FG);
+	return (hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON));
+}
+
 typedef enum {
 	GAUSS,
 	SECANT,
@@ -56,9 +60,52 @@ typedef enum {
 	NOOP,
 } Mode;
 
+typedef struct {
+	Rectangle rec;
+	Vector2 pos;
+	char buffer[MAX_BUF];
+	size_t buflen;
+	bool focus;
+	const char *label;
+} InputField;
+
+typedef struct {
+	InputField inputs[3];
+	size_t count;
+} ModeInput;
+
+void UpdateInput(InputField *m, Font font) {
+	Vector2 mouseP = GetMousePosition();
+	const char *str = "Input...";
+	
+	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+		m->focus = CheckCollisionPointRec(mouseP, m->rec);
+	
+	if (m->focus) {
+		int key = GetCharPressed();
+		if (m->buflen < MAX_BUF - 1) {
+			switch (key) {
+				case 43: case 45: case 48: case 49:
+				case 50: case 51: case 52: case 53:
+				case 54: case 55: case 56: case 57:
+				case 61: case 120:
+					m->buffer[m->buflen++] = (char)key;
+					m->buffer[m->buflen] = '\0';
+					break;
+			}
+		}
+		if (IsKeyPressed(KEY_BACKSPACE) && m->buflen > 0) m->buffer[m->buflen--] = '\0';
+	}
+	
+	RoundedRectwStroke(m->rec, m->focus ? BT : FG, FG);
+	DrawTextEx(font, m->buflen == 0 ? str : m->buffer, m->pos, FONT_SIZE, 0, FG);
+}
+
 int main(void) {
 	InitWindow(screenWidth, screenHeight, "Metode Numerik");
 	SetTargetFPS(30);
+	
+	const char *text_reference = "1010101010101010";
 	
 	const Image iconBanner = LoadImage("assets/iconBanner.png");
 	const Texture2D iconBannerTex = LoadTextureFromImage(iconBanner);
@@ -72,10 +119,6 @@ int main(void) {
 	const Vector2 tboxAboutPos = {
 		.x = (winAboutRect.width * 50 / 100) - (MeasureText(tboxMessage, FONT_SIZE) * 50 / 100),
 		.y = iconBannerPos.y + iconBanner.height + 10,
-	};
-	const Vector2 menuPos = {
-		.x = 30,
-		.y = winAboutRect.height + 20,
 	};
 	
 	const Vector2 tboxMainMenu = {
@@ -150,13 +193,25 @@ int main(void) {
 	};
 	
 	Vector2 mouseP = {0};
-	char input[MAX_INPUT + 1] = "\0";
-	size_t inputCounter = 0;
 	Mode mode = NOOP;
+	InputField gaussInput = {
+		.pos = {
+			.x = winEquationRect.x + 35,
+			.y = winEquationRect.y + 55,
+		},
+		.rec = {
+			.x = winEquationRect.x + 25,
+			.y = winEquationRect.y + 50,
+			.width = MeasureTextEx(font, text_reference, FONT_SIZE, 0).x + 20,
+			.height = MeasureTextEx(font, text_reference, FONT_SIZE, 0).y + 10,
+		},
+		.label = "X1:",
+	};
 	bool input1focus = false;
 	
 	while (!WindowShouldClose()) {
 		mouseP = GetMousePosition();
+		BeginDrawing();
 		{
 			ClearBackground(COLOR7);
 			RectwStroke(winAboutRect, BG, FG);
@@ -168,69 +223,26 @@ int main(void) {
 			
 			DrawTextEx(font, "Main Menu", tboxMainMenu, FONT_SIZE, 0, FG);
 			
-			DrawTextEx(font, "Metode Eliminasi Gauss", tboxMenuGauss, FONT_SIZE, 0, FG);
-			if (CheckCollisionPointRec(mouseP, rboxMenuGauss)) {
-				RoundedRectwStroke(rboxMenuGauss, BT, FG);
-				DrawTextEx(font, "Metode Eliminasi Gauss", tboxMenuGauss, FONT_SIZE, 0, FG);
-				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-					mode = GAUSS;
-				}
-			}
-			
-			DrawTextEx(font, "Metode Secant", tboxMenuSecant, FONT_SIZE, 0, FG);
-			if (CheckCollisionPointRec(mouseP, rboxMenuSecant)) {
-				RoundedRectwStroke(rboxMenuSecant, BT, FG);
-				DrawTextEx(font, "Metode Secant", tboxMenuSecant, FONT_SIZE, 0, FG);
-				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-					fprintf(stderr, "[DEBUG]: Gauss Secant\n");
-				}
-			}
-			
-			DrawTextEx(font, "Metode Lagrange", tboxMenuLagrange, FONT_SIZE, 0, FG);
-			if (CheckCollisionPointRec(mouseP, rboxMenuLagrange)) {
-				RoundedRectwStroke(rboxMenuLagrange, BT, FG);
-				DrawTextEx(font, "Metode Lagrange", tboxMenuLagrange, FONT_SIZE, 0, FG);
-				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-					fprintf(stderr, "[DEBUG]: Gauss Lagrange\n");
-				}
-			}
-			
-			DrawTextEx(font, "Metode Euler", tboxMenuEuler, FONT_SIZE, 0, FG);
-			if (CheckCollisionPointRec(mouseP, rboxMenuEuler)) {
-				RoundedRectwStroke(rboxMenuEuler, BT, FG);
-				DrawTextEx(font, "Metode Euler", tboxMenuEuler, FONT_SIZE, 0, FG);
-				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-					fprintf(stderr, "[DEBUG]: Gauss Euler\n");
-				}
-			}
-			
-			DrawTextEx(font, "Exit", tboxMenuExit, FONT_SIZE, 0, FG);
-			if (CheckCollisionPointRec(mouseP, rboxMenuExit)) {
-				RoundedRectwStroke(rboxMenuExit, BT, FG);
-				DrawTextEx(font, "Exit", tboxMenuExit, FONT_SIZE, 0, FG);
-				if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-					goto quit;
-				}
-			}
+			if (MenuButton("Metode Eliminasi Gauss", rboxMenuGauss, tboxMenuGauss, font)) mode = GAUSS;
+			if (MenuButton("Metode Secant", rboxMenuSecant, tboxMenuSecant, font)) mode = SECANT;
+			if (MenuButton("Metode Lagrange", rboxMenuLagrange, tboxMenuLagrange, font)) mode = LAGRANGE;
+			if (MenuButton("Metode Euler", rboxMenuEuler, tboxMenuEuler, font)) mode = EULER;
+			if (MenuButton("Exit", rboxMenuExit, tboxMenuExit, font)) goto quit;
 		}
 		switch (mode) {
 			case GAUSS:
-				RoundedRectwStroke(rboxGaussInput1, BT, FG);
-				DrawTextEx(font, "Input...", tboxGaussInput1, FONT_SIZE, 0, ST);
-				if (CheckCollisionPointRec(mouseP, rboxGaussInput1)) {
-					if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) input1focus = true;
-				} else {
-					if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) input1focus = false;
-				}
-				if (input1focus) {
-					RoundedRectwStroke(rboxGaussInput1, BT, FG);
-					DrawTextEx(font, "Clicked...", tboxGaussInput1, FONT_SIZE, 0, ST);
-				}
+				UpdateInput(&gaussInput, font);
+				/* if (CheckCollisionPointRec(mouseP, rboxGaussInput1)) { */
+				/* 	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) input1focus = true; */
+				/* } else { */
+				/* 	if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) input1focus = false; */
+				/* } */
+				/* RoundedRectwStroke(rboxGaussInput1, BT, FG); */
+				/* DrawTextEx(font, input1focus ? "Input...":"Clicked...", tboxGaussInput1, FONT_SIZE, 0, ST); */
 				break;
 			default:
 				break;
 		}
-		BeginDrawing();
 		EndDrawing();
 		if (IsKeyPressed(KEY_Q)) goto quit;
 	}
